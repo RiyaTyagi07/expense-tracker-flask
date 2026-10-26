@@ -1,0 +1,1695 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Expense Tracker Dashboard</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Bootstrap Icons -->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    >
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Existing CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
+    <style>
+
+        body {
+            background: #f5f7fb;
+        }
+
+        .dashboard-container {
+            padding: 30px;
+        }
+
+        .welcome-title {
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px;
+            border: 1px solid #e9ecef;
+            height: 100%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            background: #f0f4ff;
+        }
+
+        .stat-title {
+            color: #6c757d;
+            font-size: 14px;
+            margin-top: 12px;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .card-subtitle {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .budget-progress {
+            height: 12px;
+            border-radius: 20px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+
+        .budget-progress .progress-bar {
+            border-radius: 20px;
+        }
+
+        .analysis-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 18px;
+            height: 100%;
+        }
+
+        .analysis-label {
+            color: #6c757d;
+            font-size: 13px;
+            margin-bottom: 7px;
+        }
+
+        .analysis-value {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .change-up {
+            color: #dc3545;
+        }
+
+        .change-down {
+            color: #198754;
+        }
+
+        .change-neutral {
+            color: #6c757d;
+        }
+
+        .insight-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        .insight-icon {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 10px;
+            background: #f0f4ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .insight-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #343a40;
+        }
+
+        .filter-box {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 18px;
+        }
+
+        .table-card {
+            overflow-x: auto;
+        }
+
+        .expense-table th {
+            color: #6c757d;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .expense-table td {
+            vertical-align: middle;
+        }
+
+        .category-badge {
+            background: #eef2ff;
+            color: #495057;
+            border-radius: 20px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 35px;
+            color: #6c757d;
+        }
+
+        .budget-alert {
+            border-radius: 12px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 320px;
+        }
+
+        .trend-chart-wrapper {
+            position: relative;
+            height: 330px;
+        }
+
+        @media (max-width: 768px) {
+
+            .dashboard-container {
+                padding: 15px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .dashboard-card {
+                padding: 18px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container-fluid dashboard-container">
+
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="welcome-title mb-1">
+                Welcome, {{ session["user_name"] }} 👋
+            </h2>
+
+            <p class="text-muted mb-0">
+                Here's your financial overview.
+            </p>
+
+        </div>
+
+
+        <div>
+
+            <a
+                href="{{ url_for('add_expense') }}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-plus-lg"></i>
+                Add Expense
+            </a>
+
+            <a
+                href="{{ url_for('logout') }}"
+                class="btn btn-outline-danger ms-2"
+            >
+                <i class="bi bi-box-arrow-right"></i>
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- STAT CARDS -->
+    <!-- ================================================= -->
+
+    <div class="row g-4 mb-4">
+
+
+        <!-- TOTAL SPENDING -->
+
+        <div class="col-lg-4 col-md-6">
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    💰
+                </div>
+
+                <div class="stat-title">
+                    Total Spending
+                </div>
+
+                <div class="stat-value">
+                    ₹{{ "%.2f"|format(total_expenses) }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- THIS MONTH -->
+
+        <div class="col-lg-4 col-md-6">
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    📅
+                </div>
+
+                <div class="stat-title">
+                    This Month
+                </div>
+
+                <div class="stat-value">
+                    ₹{{ "%.2f"|format(monthly_expenses) }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- TRANSACTIONS -->
+
+        <div class="col-lg-4 col-md-6">
+
+            <div class="stat-card">
+
+                <div class="stat-icon">
+                    🧾
+                </div>
+
+                <div class="stat-title">
+                    Transactions
+                </div>
+
+                <div class="stat-value">
+                    {{ expense_count }}
+                </div>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MONTHLY BUDGET -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <div>
+
+                <div class="card-title">
+                    Monthly Budget
+                </div>
+
+                <div class="card-subtitle">
+                    Budget for {{ current_month }}
+                </div>
+
+            </div>
+
+            <span class="badge bg-light text-dark">
+                {{ current_month }}
+            </span>
+
+        </div>
+
+
+        {% if monthly_budget > 0 %}
+
+
+            <div class="row g-4 mb-4">
+
+
+                <!-- BUDGET -->
+
+                <div class="col-md-4">
+
+                    <div class="analysis-box">
+
+                        <div class="analysis-label">
+                            Monthly Budget
+                        </div>
+
+                        <div class="analysis-value">
+                            ₹{{ "%.2f"|format(monthly_budget) }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SPENT -->
+
+                <div class="col-md-4">
+
+                    <div class="analysis-box">
+
+                        <div class="analysis-label">
+                            Spent This Month
+                        </div>
+
+                        <div class="analysis-value">
+                            ₹{{ "%.2f"|format(monthly_expenses) }}
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- REMAINING -->
+
+                <div class="col-md-4">
+
+                    <div class="analysis-box">
+
+                        <div class="analysis-label">
+
+                            {% if budget_remaining >= 0 %}
+                                Remaining
+                            {% else %}
+                                Over Budget
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="analysis-value
+                            {% if budget_remaining < 0 %}
+                                text-danger
+                            {% else %}
+                                text-success
+                            {% endif %}
+                        ">
+
+                            ₹{{ "%.2f"|format(budget_remaining|abs) }}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- PROGRESS -->
+
+            <div class="d-flex justify-content-between mb-2">
+
+                <span class="small text-muted">
+                    Budget Usage
+                </span>
+
+                <strong class="small">
+                    {{ "%.1f"|format(budget_percentage) }}%
+                </strong>
+
+            </div>
+
+
+            <div class="progress budget-progress">
+
+                <div
+                    class="progress-bar
+                    {% if budget_status == 'exceeded' %}
+                        bg-danger
+                    {% elif budget_status == 'warning' %}
+                        bg-warning
+                    {% else %}
+                        bg-success
+                    {% endif %}
+                    "
+                    role="progressbar"
+                    style="width: {{ progress_percentage }}%"
+                ></div>
+
+            </div>
+
+
+            <div class="mt-3">
+
+                {% if budget_status == "exceeded" %}
+
+                    <div class="alert alert-danger budget-alert mb-0">
+                        ⚠️ You have exceeded your monthly budget.
+                    </div>
+
+                {% elif budget_status == "warning" %}
+
+                    <div class="alert alert-warning budget-alert mb-0">
+                        ⚠️ You have used more than 80% of your budget.
+                    </div>
+
+                {% else %}
+
+                    <div class="alert alert-success budget-alert mb-0">
+                        ✅ Your spending is currently within your budget.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="alert alert-info budget-alert">
+
+                <i class="bi bi-info-circle"></i>
+
+                You haven't set a monthly budget yet.
+
+            </div>
+
+
+        {% endif %}
+
+
+        <!-- SET / UPDATE BUDGET -->
+
+        <form
+            action="{{ url_for('set_budget') }}"
+            method="POST"
+            class="row g-2 mt-3"
+        >
+
+            <div class="col-md-8">
+
+                <input
+                    type="number"
+                    name="budget"
+                    class="form-control"
+                    placeholder="Enter monthly budget"
+                    min="1"
+                    step="0.01"
+                    required
+                >
+
+            </div>
+
+
+            <div class="col-md-4">
+
+                <button
+                    type="submit"
+                    class="btn btn-dark w-100"
+                >
+
+                    {% if monthly_budget > 0 %}
+                        Update Budget
+                    {% else %}
+                        Set Budget
+                    {% endif %}
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MONTHLY SPENDING ANALYSIS -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="mb-4">
+
+            <div class="card-title">
+                Monthly Spending Analysis 📊
+            </div>
+
+            <div class="card-subtitle">
+                Compare your current spending with the previous month.
+            </div>
+
+        </div>
+
+
+        <div class="row g-4">
+
+
+            <!-- THIS MONTH -->
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        This Month
+                    </div>
+
+                    <div class="analysis-value">
+                        ₹{{ "%.2f"|format(monthly_expenses) }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- LAST MONTH -->
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        Last Month
+                    </div>
+
+                    <div class="analysis-value">
+                        ₹{{ "%.2f"|format(last_month_expenses) }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- CHANGE -->
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        Change
+                    </div>
+
+
+                    <div class="analysis-value
+                        {% if spending_change > 0 %}
+                            change-up
+                        {% elif spending_change < 0 %}
+                            change-down
+                        {% else %}
+                            change-neutral
+                        {% endif %}
+                    ">
+
+                        {% if spending_change > 0 %}
+                            ↑
+                        {% elif spending_change < 0 %}
+                            ↓
+                        {% else %}
+                            →
+                        {% endif %}
+
+                        {{ "%.1f"|format(spending_change|abs) }}%
+
+                    </div>
+
+
+                    <small class="text-muted">
+
+                        {% if spending_change > 0 %}
+                            Higher spending
+                        {% elif spending_change < 0 %}
+                            Lower spending
+                        {% else %}
+                            No change
+                        {% endif %}
+
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- DAILY AVERAGE -->
+
+            <div class="col-lg-3 col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        Daily Average
+                    </div>
+
+                    <div class="analysis-value">
+                        ₹{{ "%.2f"|format(daily_average) }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- HIGHEST CATEGORY -->
+
+        <div class="row g-4 mt-1">
+
+
+            <div class="col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        Highest Spending Category
+                    </div>
+
+                    <div class="analysis-value">
+
+                        {% if highest_category != "No data" %}
+
+                            {{ highest_category }}
+
+                        {% else %}
+
+                            No data
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="col-md-6">
+
+                <div class="analysis-box">
+
+                    <div class="analysis-label">
+                        Highest Category Amount
+                    </div>
+
+                    <div class="analysis-value">
+                        ₹{{ "%.2f"|format(highest_category_amount) }}
+                    </div>
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- MONTHLY TREND CHART -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="mb-4">
+
+            <div class="card-title">
+                Monthly Spending Trend 📈
+            </div>
+
+            <div class="card-subtitle">
+                Your spending over the last 6 months.
+            </div>
+
+        </div>
+
+
+        <div class="trend-chart-wrapper">
+
+            <canvas id="monthlyTrendChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- SPENDING INSIGHTS -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="mb-3">
+
+            <div class="card-title">
+                Spending Insights 💡
+            </div>
+
+            <div class="card-subtitle">
+                Automatic insights generated from your expense data.
+            </div>
+
+        </div>
+
+
+        {% if insights %}
+
+
+            {% for insight in insights %}
+
+                <div class="insight-item">
+
+                    <div class="insight-icon">
+
+                        {% if loop.index == 1 %}
+                            📊
+                        {% elif loop.index == 2 %}
+                            🏆
+                        {% elif loop.index == 3 %}
+                            📅
+                        {% else %}
+                            💰
+                        {% endif %}
+
+                    </div>
+
+
+                    <div class="insight-text">
+                        {{ insight }}
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="empty-state">
+
+                No insights available yet.
+
+            </div>
+
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- CATEGORY CHART -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="mb-4">
+
+            <div class="card-title">
+                Category-wise Spending
+            </div>
+
+            <div class="card-subtitle">
+                See where your money is going.
+            </div>
+
+        </div>
+
+
+        <div class="chart-wrapper">
+
+            <canvas id="categoryChart"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- FILTERS -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card">
+
+        <div class="mb-3">
+
+            <div class="card-title">
+                Search & Filter Expenses
+            </div>
+
+            <div class="card-subtitle">
+                Find transactions quickly.
+            </div>
+
+        </div>
+
+
+        <div class="filter-box">
+
+
+            <div class="row g-3">
+
+
+                <!-- SEARCH -->
+
+                <div class="col-lg-3 col-md-6">
+
+                    <label class="form-label">
+                        Search
+                    </label>
+
+                    <input
+                        type="text"
+                        id="searchInput"
+                        class="form-control"
+                        placeholder="Search expense..."
+                    >
+
+                </div>
+
+
+                <!-- CATEGORY -->
+
+                <div class="col-lg-3 col-md-6">
+
+                    <label class="form-label">
+                        Category
+                    </label>
+
+                    <select
+                        id="categoryFilter"
+                        class="form-select"
+                    >
+
+                        <option value="">
+                            All Categories
+                        </option>
+
+                        {% for category in categories %}
+
+                            <option value="{{ category }}">
+                                {{ category }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <!-- FROM DATE -->
+
+                <div class="col-lg-2 col-md-6">
+
+                    <label class="form-label">
+                        From Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="fromDate"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <!-- TO DATE -->
+
+                <div class="col-lg-2 col-md-6">
+
+                    <label class="form-label">
+                        To Date
+                    </label>
+
+                    <input
+                        type="date"
+                        id="toDate"
+                        class="form-control"
+                    >
+
+                </div>
+
+
+                <!-- CLEAR -->
+
+                <div class="col-lg-2 col-md-6 d-flex align-items-end">
+
+                    <button
+                        type="button"
+                        id="clearFilters"
+                        class="btn btn-outline-secondary w-100"
+                    >
+
+                        <i class="bi bi-x-circle"></i>
+
+                        Clear
+
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="mt-3">
+
+                <span
+                    id="resultCount"
+                    class="text-muted small"
+                >
+
+                    Showing {{ expenses|length }} expenses
+
+                </span>
+
+            </div>
+
+
+            <div
+                id="dateError"
+                class="text-danger small mt-2"
+                style="display: none;"
+            >
+
+                From Date cannot be greater than To Date.
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- EXPENSE TABLE -->
+    <!-- ================================================= -->
+
+    <div class="dashboard-card table-card">
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <div>
+
+                <div class="card-title">
+                    Recent Expenses
+                </div>
+
+                <div class="card-subtitle">
+                    Your latest transactions.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        {% if expenses %}
+
+
+            <div class="table-responsive">
+
+                <table
+                    class="table expense-table align-middle"
+                    id="expenseTable"
+                >
+
+                    <thead>
+
+                        <tr>
+
+                            <th>
+                                Title
+                            </th>
+
+                            <th>
+                                Amount
+                            </th>
+
+                            <th>
+                                Category
+                            </th>
+
+                            <th>
+                                Date
+                            </th>
+
+                            <th>
+                                Actions
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for expense in expenses %}
+
+                            <tr
+                                class="expense-row"
+                                data-title="{{ expense['title']|lower }}"
+                                data-category="{{ expense['category']|lower }}"
+                                data-date="{{ expense['date'] }}"
+                            >
+
+                                <td>
+                                    <strong>
+                                        {{ expense["title"] }}
+                                    </strong>
+                                </td>
+
+
+                                <td>
+
+                                    <strong>
+                                        ₹{{ "%.2f"|format(expense["amount"]) }}
+                                    </strong>
+
+                                </td>
+
+
+                                <td>
+
+                                    <span class="category-badge">
+
+                                        {{ expense["category"] }}
+
+                                    </span>
+
+                                </td>
+
+
+                                <td>
+
+                                    {{ expense["date"] }}
+
+                                </td>
+
+
+                                <td>
+
+                                    <a
+                                        href="{{ url_for(
+                                            'edit_expense',
+                                            expense_id=expense['id']
+                                        ) }}"
+                                        class="btn btn-sm btn-outline-primary"
+                                    >
+
+                                        <i class="bi bi-pencil"></i>
+
+                                    </a>
+
+
+                                    <a
+                                        href="{{ url_for(
+                                            'delete_expense',
+                                            expense_id=expense['id']
+                                        ) }}"
+                                        class="btn btn-sm btn-outline-danger"
+                                        onclick="return confirm('Are you sure you want to delete this expense?');"
+                                    >
+
+                                        <i class="bi bi-trash"></i>
+
+                                    </a>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div
+                id="noResults"
+                class="empty-state"
+                style="display: none;"
+            >
+
+                <i class="bi bi-search fs-2"></i>
+
+                <p class="mt-2 mb-0">
+                    No expenses match your filters.
+                </p>
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="empty-state">
+
+                <div class="fs-1">
+                    🧾
+                </div>
+
+                <h5 class="mt-3">
+                    No expenses yet
+                </h5>
+
+                <p>
+                    Start tracking your spending by adding your first expense.
+                </p>
+
+                <a
+                    href="{{ url_for('add_expense') }}"
+                    class="btn btn-primary"
+                >
+                    Add First Expense
+                </a>
+
+            </div>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- CHART.JS -->
+<!-- ===================================================== -->
+
+<script>
+
+    // =====================================================
+    // CATEGORY CHART
+    // =====================================================
+
+    const categoryLabels = {{ categories | tojson }};
+
+    const categoryData = {{ category_totals | tojson }};
+
+
+    const categoryCanvas =
+        document.getElementById("categoryChart");
+
+
+    if (categoryCanvas) {
+
+        new Chart(
+            categoryCanvas,
+            {
+
+                type: "doughnut",
+
+                data: {
+
+                    labels: categoryLabels,
+
+                    datasets: [
+
+                        {
+
+                            data: categoryData,
+
+                            borderWidth: 2
+
+                        }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+
+                            position: "bottom"
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
+    // MONTHLY TREND CHART
+    // =====================================================
+
+    const trendLabels =
+        {{ trend_labels | tojson }};
+
+    const trendData =
+        {{ trend_totals | tojson }};
+
+
+    const trendCanvas =
+        document.getElementById("monthlyTrendChart");
+
+
+    if (trendCanvas) {
+
+        new Chart(
+            trendCanvas,
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels: trendLabels,
+
+                    datasets: [
+
+                        {
+
+                            label: "Monthly Spending",
+
+                            data: trendData,
+
+                            borderWidth: 3,
+
+                            tension: 0.35,
+
+                            fill: false,
+
+                            pointRadius: 5,
+
+                            pointHoverRadius: 7
+
+                        }
+
+                    ]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero: true,
+
+                            ticks: {
+
+                                callback: function(value) {
+
+                                    return "₹" +
+                                        Number(value)
+                                        .toLocaleString("en-IN");
+
+                                }
+
+                            }
+
+                        }
+
+                    },
+
+                    plugins: {
+
+                        legend: {
+
+                            display: true,
+
+                            position: "top"
+
+                        },
+
+                        tooltip: {
+
+                            callbacks: {
+
+                                label: function(context) {
+
+                                    return " ₹" +
+                                        Number(
+                                            context.raw
+                                        ).toLocaleString(
+                                            "en-IN",
+                                            {
+                                                minimumFractionDigits: 2
+                                            }
+                                        );
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+
+    // =====================================================
+    // FILTER SYSTEM
+    // =====================================================
+
+    const searchInput =
+        document.getElementById("searchInput");
+
+    const categoryFilter =
+        document.getElementById("categoryFilter");
+
+    const fromDate =
+        document.getElementById("fromDate");
+
+    const toDate =
+        document.getElementById("toDate");
+
+    const clearFilters =
+        document.getElementById("clearFilters");
+
+    const resultCount =
+        document.getElementById("resultCount");
+
+    const dateError =
+        document.getElementById("dateError");
+
+    const noResults =
+        document.getElementById("noResults");
+
+    const expenseRows =
+        document.querySelectorAll(".expense-row");
+
+
+    function applyFilters() {
+
+        const searchValue =
+            searchInput.value
+            .toLowerCase()
+            .trim();
+
+        const selectedCategory =
+            categoryFilter.value
+            .toLowerCase()
+            .trim();
+
+        const startDate =
+            fromDate.value;
+
+        const endDate =
+            toDate.value;
+
+
+        // Date validation
+
+        if (
+            startDate &&
+            endDate &&
+            startDate > endDate
+        ) {
+
+            dateError.style.display =
+                "block";
+
+            expenseRows.forEach(function(row) {
+
+                row.style.display =
+                    "none";
+
+            });
+
+            resultCount.textContent =
+                "Showing 0 expenses";
+
+            noResults.style.display =
+                "block";
+
+            return;
+
+        }
+
+
+        dateError.style.display =
+            "none";
+
+
+        let visibleCount = 0;
+
+
+        expenseRows.forEach(
+            function(row) {
+
+                const title =
+                    row.dataset.title;
+
+                const category =
+                    row.dataset.category;
+
+                const date =
+                    row.dataset.date;
+
+
+                const matchesSearch =
+                    !searchValue ||
+                    title.includes(searchValue);
+
+
+                const matchesCategory =
+                    !selectedCategory ||
+                    category === selectedCategory;
+
+
+                const matchesFromDate =
+                    !startDate ||
+                    date >= startDate;
+
+
+                const matchesToDate =
+                    !endDate ||
+                    date <= endDate;
+
+
+                if (
+                    matchesSearch &&
+                    matchesCategory &&
+                    matchesFromDate &&
+                    matchesToDate
+                ) {
+
+                    row.style.display =
+                        "";
+
+                    visibleCount++;
+
+                } else {
+
+                    row.style.display =
+                        "none";
+
+                }
+
+            }
+        );
+
+
+        resultCount.textContent =
+            "Showing " +
+            visibleCount +
+            " expenses";
+
+
+        if (visibleCount === 0) {
+
+            noResults.style.display =
+                "block";
+
+        } else {
+
+            noResults.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    // =====================================================
+    // FILTER EVENTS
+    // =====================================================
+
+    if (searchInput) {
+
+        searchInput.addEventListener(
+            "input",
+            applyFilters
+        );
+
+    }
+
+
+    if (categoryFilter) {
+
+        categoryFilter.addEventListener(
+            "change",
+            applyFilters
+        );
+
+    }
+
+
+    if (fromDate) {
+
+        fromDate.addEventListener(
+            "change",
+            applyFilters
+        );
+
+    }
+
+
+    if (toDate) {
+
+        toDate.addEventListener(
+            "change",
+            applyFilters
+        );
+
+    }
+
+
+    // =====================================================
+    // CLEAR FILTERS
+    // =====================================================
+
+    if (clearFilters) {
+
+        clearFilters.addEventListener(
+            "click",
+            function() {
+
+                searchInput.value = "";
+
+                categoryFilter.value = "";
+
+                fromDate.value = "";
+
+                toDate.value = "";
+
+                dateError.style.display =
+                    "none";
+
+                applyFilters();
+
+            }
+        );
+
+    }
+
+</script>
+
+
+</body>
+
+</html>
+
