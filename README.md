@@ -42,11 +42,10 @@ expense-tracker-flask/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/expense-tracker-flask.git
+git clone https://github.com/RiyaTyagi07/expense-tracker-flask.git
 cd expense-tracker-flask
 ```
 
-Replace `YOUR-USERNAME` with your GitHub username.
 
 ### 2. Create a virtual environment
 
