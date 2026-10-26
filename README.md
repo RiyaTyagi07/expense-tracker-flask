@@ -75,8 +75,9 @@ Open the local URL shown in your terminal, usually `http://127.0.0.1:5000/`.
 
 ## Application Screenshot
 
-![Expense Tracker Dashboard](screenshots/dashboard.png)
+## Application Screenshot
 
+![Expense Tracker Dashboard](screenshots/Dashboard.png.png)
 
 ## Database
 
