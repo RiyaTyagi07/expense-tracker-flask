@@ -73,6 +73,11 @@ python app.py
 
 Open the local URL shown in your terminal, usually `http://127.0.0.1:5000/`.
 
+## Application Screenshot
+
+![Expense Tracker Dashboard](screenshots/dashboard.png)
+
+
 ## Database
 
 The application uses SQLite to store expense records. Ensure the database is initialized according to the application's setup code before using the application.
